@@ -18,3 +18,5 @@ Imports:
     plyr,
     dplyr
 RoxygenNote: 6.1.1
+URL: https://github.com/Madraso/statstestplot
+BugReports: https://github.com/Madraso/statstestplot/issues
