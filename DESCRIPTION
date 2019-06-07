@@ -1,0 +1,20 @@
+Package: statstestplot
+Title: Библиотека автоматического построения графиков для статистического анализа данных
+Version: 0.0.0.9000
+Authors@R: person("Vladislav", "Kyzminykh", email = "vladislav.ip514@gmail.com", role = c("aut", "cre"))
+Description: Пакет содержит функции построения графиков сравнения данных в исследуемых группах пациентов (Сравнение бинарных показателей и сравнение категорий).
+License: CC0
+Encoding: UTF-8
+LazyData: true
+Suggests: 
+    testthat
+Depends: R (>= 3.3.3)
+Imports: 
+    ggplot2,
+    ggsignif,
+    utils,
+    stats,
+    binom,
+    plyr,
+    dplyr
+RoxygenNote: 6.1.1
