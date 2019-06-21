@@ -1,4 +1,4 @@
-p_value_formatted <- function(p_value) {
+﻿p_value_formatted <- function(p_value) {
   nod <- 3
   p_val <- ifelse(p_value < 0.001, "p < 0.001", paste0("p = ", format(round(p_value, nod), nsmall = nod)))
   p_val <- ifelse(p_value < 0.05, paste0(p_val, "*"), p_val)
@@ -30,7 +30,7 @@ check_columns <- function(function_name, data, group_id, group_labels, column_li
   sep_data_on_groups <- split(data, data[, group_id])
   groups_names <- levels(data[, group_id])
   columns_names <- colnames(data)
-  error_columns <- list()
+  incorrect_vars_and_grps <- list()
   for (i in 1:length(sep_data_on_groups)) {
     for (j in 1:length(column_list)) {
       warning_flag <- FALSE
@@ -49,10 +49,10 @@ check_columns <- function(function_name, data, group_id, group_labels, column_li
           warning_flag <- TRUE
         }
       }
-      if (warning_flag) error_columns[[length(error_columns) + 1]] <- list(group = groups_names[i], column = j)
+      if (warning_flag) incorrect_vars_and_grps[[length(incorrect_vars_and_grps) + 1]] <- list(group = groups_names[i], column = j)
     }
   }
-  return (error_columns)
+  return (incorrect_vars_and_grps)
 }
 
 check_errors_in_param <- function(data, group_id, group_labels,
@@ -105,36 +105,36 @@ check_errors_in_param <- function(data, group_id, group_labels,
   }
 }
 
-get_groups_with_errors <- function(function_name, error_columns, indicator_number) {
+get_groups_with_errors <- function(function_name, incorrect_vars_and_grps, indicator_number) {
   groups_with_errors <- c()
-  if (length(error_columns) > 0) {
+  if (length(incorrect_vars_and_grps) > 0) {
     if (function_name == "cmp.bin.indicators") {
-      indicator_with_error <- any(sapply(error_columns, function (x) { x$column == indicator_number }))
+      indicator_with_error <- any(sapply(incorrect_vars_and_grps, function (x) { x$column == indicator_number }))
       if (indicator_with_error) {
-        for (j in 1:length(error_columns)) {
-          if (error_columns[[j]]$column == indicator_number) {
-            groups_with_errors <- append(groups_with_errors, error_columns[[j]]$group)
+        for (j in 1:length(incorrect_vars_and_grps)) {
+          if (incorrect_vars_and_grps[[j]]$column == indicator_number) {
+            groups_with_errors <- append(groups_with_errors, incorrect_vars_and_grps[[j]]$group)
           }
         }
       }
     }
     else if (function_name == "cmp.categories") {
-      for (j in 1:length(error_columns)) {
-        groups_with_errors <- append(groups_with_errors, error_columns[[j]]$group)
+      for (j in 1:length(incorrect_vars_and_grps)) {
+        groups_with_errors <- append(groups_with_errors, incorrect_vars_and_grps[[j]]$group)
       }
     }
   }
   return (groups_with_errors)
 }
 
-get_p_values <- function(function_name, data, indicators, groups, error_columns) {
+get_p_values <- function(function_name, data, indicators, groups, incorrect_vars_and_grps) {
   number_groups <- length(groups)
   number_indicators <- length(indicators)
   groups_combn <- t(utils::combn(groups, 2))
   p_values <- c()
   for (i in 1:number_indicators) {
     for (j in 1:nrow(groups_combn)) {
-      groups_with_errors <- get_groups_with_errors(function_name, error_columns, i)
+      groups_with_errors <- get_groups_with_errors(function_name, incorrect_vars_and_grps, i)
       if (any(groups_combn[j, ] %in% groups_with_errors)) next
       filtered_data <- dplyr::filter(data, data[[1]] %in% groups_combn[j, ])
       if (function_name == "cmp.bin.indicators") {
@@ -149,7 +149,7 @@ get_p_values <- function(function_name, data, indicators, groups, error_columns)
   return (p_values)
 }
   
-get_x_arrow_coordinates <- function(function_name, groups, number_groups, number_indicators, error_columns) {
+get_x_arrow_coordinates <- function(function_name, groups, number_groups, number_indicators, incorrect_vars_and_grps) {
   groups_indicator_width <- 0.9
   width_btw_indicators <- 0.55
   bar_width <- groups_indicator_width / number_groups
@@ -162,7 +162,7 @@ get_x_arrow_coordinates <- function(function_name, groups, number_groups, number
   coord_combn$V3 <- as.double(as.character(coord_combn$V3))
   coord_combn$V4 <- as.double(as.character(coord_combn$V4))
   for (i in 1:number_indicators) {
-    groups_with_errors <- get_groups_with_errors(function_name, error_columns, i)
+    groups_with_errors <- get_groups_with_errors(function_name, incorrect_vars_and_grps, i)
     for (j in 1:nrow(coord_combn)) {
       if (any(coord_combn[j, c(1, 2)] %in% groups_with_errors)) next
       else x_positions[nrow(x_positions) + 1, ] <- coord_combn[j, c(3, 4)] + (i - 1)
@@ -172,7 +172,7 @@ get_x_arrow_coordinates <- function(function_name, groups, number_groups, number
 }
 
 get_y_arrow_coordinates <- function(function_name, data, groups,
-                                    indicators, number_groups, number_indicators, error_columns) {
+                                    indicators, number_groups, number_indicators, incorrect_vars_and_grps) {
   y_positions <- c()
   groups_combn <- t(utils::combn(groups, 2))
   number_combn <- nrow(groups_combn)
@@ -184,7 +184,7 @@ get_y_arrow_coordinates <- function(function_name, data, groups,
     y_start <- max(upper_borders_ci) + 10
     y_end <- y_start + (step_length * number_combn)
     seq_step <- (y_end - y_start) / (number_combn - 1)
-    groups_with_errors <- get_groups_with_errors(function_name, error_columns, i)
+    groups_with_errors <- get_groups_with_errors(function_name, incorrect_vars_and_grps, i)
     for (j in 1:number_combn) {
       if (any(groups_combn[j, ] %in% groups_with_errors)) next
       else {
@@ -202,14 +202,12 @@ get_y_arrow_coordinates <- function(function_name, data, groups,
 }
   
 get_p_values_and_arrow_coord <- function(function_name, input_data, binom_data, indicators, groups,
-                             error_columns, p_adjust_method = "BH") {
-  p_values <- get_p_values(function_name, input_data, indicators, groups, error_columns)
-  if (function_name == "cmp.categories") {
-    p_values <- stats::p.adjust(p_values, method = p_adjust_method)
-  }
-  arrow_x_coord <- get_x_arrow_coordinates(function_name, groups, length(groups), length(indicators), error_columns)
+                             incorrect_vars_and_grps, p_adjust_method) {
+  p_values <- get_p_values(function_name, input_data, indicators, groups, incorrect_vars_and_grps)
+  p_values <- stats::p.adjust(p_values, method = p_adjust_method)
+  arrow_x_coord <- get_x_arrow_coordinates(function_name, groups, length(groups), length(indicators), incorrect_vars_and_grps)
   arrow_y_coord <- get_y_arrow_coordinates(function_name, binom_data, groups, indicators,
-                                           length(groups), length(indicators), error_columns)
+                                           length(groups), length(indicators), incorrect_vars_and_grps)
   arrow_positions <- data.frame()
   if (!plyr::empty(arrow_x_coord)) {
     arrow_positions <- as.data.frame(p_values)
@@ -244,24 +242,26 @@ get_data_for_building_graphic <- function(function_name, indicators, groups, num
   data_for_graphic$upper <- round(data_for_graphic$upper * 100)
   return (data_for_graphic)
 }
-#' Построение графика сравнения предоперационных бинарных показателей в исследуемых группах пациентов
+#' Построение графика сравнения бинарных показателей в исследуемых группах пациентов
 #'
 #' Имеется выборка из N пациентов, разделенных на 2 или более группы, а также набор показателей.
 #' Каждый показатель представляет собой набор бинарных значений (0 и 1). 1 - пациент имеет данный показатель, 0 - показатель у пациента отсутствует.
 #'
 #' На графике каждый показатель - это набор столбцов, их количество равно количеству групп пациентов.
 #' Над столбцами отображается информация о количестве в группе пациентов, имеющих данный показатель, а также процент этих людей от всех пациентов, имеющих данный показатель.
-#' Для столбцов в виде стрелки отображается диапазон, в котором с вероятностью 95\% находится "истинный" процент пациентов с данным показателем, называемый доверительным интервалом.
-#' Для всевозможных пар групп отображается значение p, которое используется для их сравнения.
+#' Для столбцов в виде стрелки отображается диапазон, в котором с вероятностью 95\% находится "истинный" процент пациентов, называемый доверительным интервалом.
+#' Для всевозможных пар групп отображается p-значение, которое используется для их сравнения.
 #'
-#' @param data Датафрейм с данными (Пример: libgr::binary_indicators)
+#' @param data Датафрейм с данными (Пример: statstestplot::binary_indicators)
 #' @param group_id Число, являющееся номером столбца с группами пациентов
-#' @param group_labels Строковый вектор, cодержащий имена групп, которые будут отображены в легенде графика
+#' @param group_labels Строковый вектор, cодержащий имена групп. Эти имена будут сопоставлены в легенде графика
 #' @param column_list Числовой вектор, содержащий номера столбцов с бинарными показателями
-#' @param p_display Решает, какие парные значения p отображать. Возможные значения:
-#' 	"s" (значимые [p <= 0.05]), "ns" (незначимые [p > 0.05]), "all" (все значения). (По умолчанию: "all").
 #' @param path_pics_out Строка, содержащая путь, по которому будет сохранен файл с графиком
 #' @param pic_name Строка, содержащая имя сохраняемого файла
+#' @param p_display Решает, какие парные p-значения отображать.
+#' Возможные значения: "s" (значимые [p <= 0.05]), "ns" (незначимые [p > 0.05]), "all" (все значения). (По умолчанию: "all").
+#' @param p_adjust_method Решает, каким методом будут отрегулированы p-значения.
+#' Возможные значения: "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none". (По умолчанию: "BH").
 #' @return Объект класса ggplot2
 #' @export
 #' @examples
@@ -272,38 +272,39 @@ get_data_for_building_graphic <- function(function_name, indicators, groups, num
 #' #Распечатаем его
 #' print(binary_indicators)
 #'
-#' #Построим график с отображением всех парных значений p
+#' #Построим график с параметрами по умолчанию
 #' group_id <- 1
 #' group_labels <- c("A", "B", "C")
 #' columns <- c(2, 3, 4, 5, 6)
 #' picture_name <- "БП_все_значения_p"
 #' picture_path <- paste0(getwd(), "/")
-#' graphic <- cmp.bin.indicators(binary_indicators, group_id, group_labels,
-#' 	columns, picture_path, picture_name)
+#' graphic <- cmp.bin.indicators(binary_indicators, group_id,
+#'     group_labels, columns, picture_path, picture_name)
 #'
-#' #Построим график с отображением только незначимых p
+#' #Построим график с отображением только незначимых p и их регулировкой методом Бенджамини-Хохберга
 #' group_id <- 1
 #' group_labels <- c("A", "B", "C")
 #' columns <- c(2, 3, 4, 5, 6)
 #' p_display <- "ns"
+#' p_adjust_method = "BH"
 #' picture_name <- "БП_незначимые_p"
 #' picture_path <- paste0(getwd(), "/")
-#' graphic <- cmp.bin.indicators(binary_indicators, group_id, group_labels,
-#' 	columns, picture_path, picture_name, p_display)
-cmp.bin.indicators <- function(data, group_id, group_labels, column_list, path_pics_out, pic_name, p_display = "all") {
-  #проверка параметров на корректность
+#' graphic <- cmp.bin.indicators(binary_indicators, group_id,
+#'     group_labels, columns, picture_path, picture_name, p_display, p_adjust_method)
+cmp.bin.indicators <- function(data, group_id, group_labels, column_list, path_pics_out, pic_name, p_display = "all", p_adjust_method = "BH") {
+  #проверка входных параметров на корректность
   check_errors_in_param(data, group_id, group_labels, column_list, path_pics_out, pic_name, p_display)
-  #проверка столбцов c показателями на корректность
-  error_columns <- check_columns("cmp.bin.indicators", data, group_id, group_labels, column_list)
-  #преобразование столбцов с группами и показателями к факторным векторам
+  #проверка столбцов c переменными на ошибки
+  incorrect_vars_and_grps <- check_columns("cmp.bin.indicators", data, group_id, group_labels, column_list)
+  #преобразование столбца с группами и столбцов с показателями к факторам
   data[, group_id] <- factor(data[, group_id])
-  for (i in column_list) {
-    data[, i] <- factor(as.logical(data[, i]))
+  for (i in 1:length(column_list)) {
+    data[, column_list[i]] <- factor(as.logical(data[, column_list[i]]))
   }
-  #запоминаем группы и показатели
+  #запоминаем имена групп и показателей
   groups <- levels(data[, group_id])
   indicators <- colnames(data)[column_list]
-  #создание датафрейма, содержащего количество человек для каждого показателя
+  #создание датафрейма, содержащего количество пациентов в данной группе, имеющих данный показатель
   number_peoples <- data.frame()
   for (i in 1:length(indicators)) {
     contingency_table <- table(data[, c(group_id, column_list[i])])
@@ -312,27 +313,26 @@ cmp.bin.indicators <- function(data, group_id, group_labels, column_list, path_p
   number_peoples <- t(number_peoples)
   rownames(number_peoples) <- groups
   colnames(number_peoples) <- indicators
-  #присваивание неопределенных значений тем показателям и группам,
-  #которые определены в списке error_columns
-  if (length(error_columns) > 0) {
-    for (i in 1:length(error_columns)) {
-      number_peoples[error_columns[[i]]$group, error_columns[[i]]$column] <- NA
+  #присваивание неопределенных значений ячейкам number_peoples на пересечении группы и показателя с ошибкой
+  if (length(incorrect_vars_and_grps) > 0) {
+    for (i in 1:length(incorrect_vars_and_grps)) {
+      number_peoples[incorrect_vars_and_grps[[i]]$group, incorrect_vars_and_grps[[i]]$column] <- NA
     }
   }
-  #получение датафрейма, содержащего данные о количестве человек и доверительном интервале для каждого столбца
-  peoples_total <- table(data[, group_id])
+  #создание датафрейма с данными для построения графика 
   data_for_graphic <- get_data_for_building_graphic("cmp.bin.indicators", indicators, groups, number_peoples)
-  #получение значений p и координат стрелок
+  #создание датафрейма с p-значениями и координатами стрелок
   data_with_necessary_col <- data[, c(group_id, column_list)]
   arrow_positions <- get_p_values_and_arrow_coord("cmp.bin.indicators", data_with_necessary_col,
-                                                  data_for_graphic, indicators, groups, error_columns)
-  #фильтрация датафрейма со значениями p в зависимости от режима их отображения
+                                                  data_for_graphic, indicators,
+                                                  groups, incorrect_vars_and_grps, p_adjust_method)
+  #фильтрация датафрейма с p-значениями в зависимости от режима их отображения
   if (p_display == "s") {
     arrow_positions <- dplyr::filter(arrow_positions, arrow_positions$p <= 0.05)
   } else if (p_display == "ns") {
     arrow_positions <- dplyr::filter(arrow_positions, arrow_positions$p > 0.05)
   }
-  #создание графика
+  #инициализация графика
   graphic <- ggplot2::ggplot(data_for_graphic, ggplot2::aes(x = data_for_graphic$indicators,
                                           y = data_for_graphic$mean, fill = data_for_graphic$groups))
   graphic <- graphic + ggplot2::geom_bar(position = "dodge", stat = "identity", na.rm = TRUE)
@@ -350,16 +350,17 @@ cmp.bin.indicators <- function(data, group_id, group_labels, column_list, path_p
   }
   graphic <- graphic + ggplot2::scale_y_continuous(name = NULL, breaks = seq(0, lim_y, 5),
                                           limits = c(0, lim_y), labels = function (x) paste0(x, "%"))
-  #изменение размера легенды
+  #изменение размера элементов легенды
   graphic <- graphic + ggplot2::theme(legend.key.size = grid::unit(0.7, "cm"))
   #редактирование заголовка легенды
   graphic <- graphic + ggplot2::guides(fill = ggplot2::guide_legend(title = NULL))
   #редактирование названий групп в легенде
+  peoples_total <- table(data[, group_id])
   for (i in 1:length(groups)) {
     group_labels[i] <- paste0(group_labels[i], "\n(n = ", peoples_total[i], ")")
   }
   graphic <- graphic + ggplot2::scale_fill_discrete(labels = group_labels, limits = groups)
-  #вывод информации о количестве людей для каждого столбца
+  #вывод информации о количестве пациентов и проценте этих пациентов над столбцами
   percents <- as.character(data_for_graphic$mean)
   number_peoples_in_group <- as.character(data_for_graphic$x)
   labels_for_bars <- c()
@@ -377,13 +378,13 @@ cmp.bin.indicators <- function(data, group_id, group_labels, column_list, path_p
                                           position = ggplot2::position_dodge(0.9),
                                           size = 3,
                                           na.rm = TRUE)
-  #добавление к графику доверительных интервалов
+  #добавление к графику доверительных интервалов для процента пациентов
   graphic <- graphic + ggplot2::geom_errorbar(ggplot2::aes(ymin = data_for_graphic$lower,
                                                            ymax = data_for_graphic$upper),
                                      width = 0.5,
                                      position = ggplot2::position_dodge(0.9),
                                      na.rm = TRUE)
-  #добавление стрелок со значениями p
+  #добавление p-значений и стрелок на график
   if (!plyr::empty(arrow_positions)) {
     graphic <- graphic + ggsignif::geom_signif(y_position = arrow_positions$y,
                                               xmin = arrow_positions$x_min,
@@ -394,7 +395,7 @@ cmp.bin.indicators <- function(data, group_id, group_labels, column_list, path_p
                                               na.rm = TRUE)
     
   }
-  #сохранение графика в файл
+  #сохранение графика в файл и вывод графика на экран
   save_pic_png_600(graphic, path_pics_out, pic_name)
   return (graphic)
 }
@@ -404,18 +405,19 @@ cmp.bin.indicators <- function(data, group_id, group_labels, column_list, path_p
 #'
 #' На графике каждая категория - это набор столбцов, их количество равно количеству групп пациентов.
 #' Над столбцами отображается информация о количестве в группе пациентов, принадлежащих данной категории, а также процент этих людей от всех пациентов в группе.
-#' Для столбцов в виде стрелки отображается диапазон, в котором с вероятностью 95\% находится "истинный" процент пациентов в группе с данной категорией, называемый доверительным интервалом.
-#' Для всевозможных пар групп отображается значение p, которое используется для их сравнения.
+#' Для столбцов в виде стрелки отображается диапазон, в котором с вероятностью 95\% находится "истинный" процент пациентов, называемый доверительным интервалом.
+#' Для всевозможных пар групп отображается p-значение, которое используется для их сравнения.
 #'
-#' @param data Датафрейм с данными (Пример: libgr::categories)
+#' @param data Датафрейм с данными (Пример: statstestplot::categories)
 #' @param group_id Число, являющееся номером столбца с группами пациентов
-#' @param group_labels Строковый вектор, cодержащий имена групп, которые будут отображены в легенде графика
+#' @param group_labels Строковый вектор, cодержащий имена групп. Эти имена будут сопоставлены в легенде графика
 #' @param column_cat Число, являющееся номером столбца с категориями
-#' @param p_display Решает, какие парные значения p отображать. Возможные значения:
-#' 	"s" (значимые [p <= 0.05]), "ns" (незначимые [p > 0.05]), "all" (все значения). (По умолчанию: "all").
-#' @param p_adjust_method Решает, каким методом будут отрегулированы значения p. Возможные значения: "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none". (По умолчанию: "BH").
 #' @param path_pics_out Строка, содержащая путь, по которому будет сохранен файл с графиком
 #' @param pic_name Строка, содержащая имя сохраняемого файла
+#' @param p_display Решает, какие парные p-значения отображать.
+#' Возможные значения: "s" (значимые [p <= 0.05]), "ns" (незначимые [p > 0.05]), "all" (все значения). (По умолчанию: "all").
+#' @param p_adjust_method Решает, каким методом будут отрегулированы p-значения.
+#' Возможные значения: "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none". (По умолчанию: "BH").
 #' @return Объект класса ggplot2
 #' @export
 #' @examples
@@ -433,9 +435,9 @@ cmp.bin.indicators <- function(data, group_id, group_labels, column_list, path_p
 #' picture_name <- "Категории_по_умолчанию"
 #' picture_path <- paste0(getwd(), "/")
 #' cmp.categories(categories, group_id, group_labels, column_cat,
-#' 	picture_path, picture_name)
+#'     picture_path, picture_name)
 #'
-#' #Построим график, отобразив только незначимые p и отрегулируем их методом поправки Бонферрони
+#' #Построим график, отобразив только незначимые p и отрегулировав их методом поправки Бонферрони
 #' group_id <- 1
 #' group_labels <- c("A", "B", "C")
 #' column_cat <- 2
@@ -443,42 +445,40 @@ cmp.bin.indicators <- function(data, group_id, group_labels, column_list, path_p
 #' p_adjust_method <- "bonferroni"
 #' picture_name <- "Категории_незначимые_p_метод_Бонферрони"
 #' picture_path <- paste0(getwd(), "/")
-#' cmp.categories(categories, group_id, group_labels, column_cat,
-#' 	picture_path, picture_name, p_display, p_adjust_method)
+#' cmp.categories(categories, group_id, group_labels,
+#'     column_cat, picture_path, picture_name, p_display, p_adjust_method)
 cmp.categories <- function(data, group_id, group_labels, column_cat, path_pics_out, pic_name, p_display = "all", p_adjust_method = "BH") {
-  #проверка параметров на корректность
+  #проверка входных параметров на корректность
   check_errors_in_param(data, group_id, group_labels, column_cat, path_pics_out, pic_name, p_display, p_adjust_method)
-  #проверка на корректность значений ФК в каждой группе
-  groups_with_errors <- check_columns("cmp.categories", data, group_id, group_labels, column_cat)
-  #приведение столбцов с группами и функциональными классами к факторам
+  #проверка на пустые значения в столбце с категориями
+  incorrect_vars_and_grps <- check_columns("cmp.categories", data, group_id, group_labels, column_cat)
+  #преобразование столбца с группами и категориями к факторам
   data[, group_id] <- factor(data[, group_id])
   data[, column_cat] <- factor(data[, column_cat])
-  #запоминаем группы и функциональные классы
+  #запоминаем имена групп и категории категориального признака
   groups <- levels(data[, group_id])
   categories <- levels(data[, column_cat])
-  #создание датафрейма, содержащего количество человек в каждом ФК
+  #создание датафрейма, содержащего количество пациентов в данной группе, принадлежащих данной категории
   number_peoples <- table(data[, c(group_id, column_cat)])
-  #присваивание неопределенных значений тем группам,
-  #которые определены в списке groups_with_errors
-  if (length(groups_with_errors) > 0) {
-    for (i in 1:length(groups_with_errors)) {
-      number_peoples[groups_with_errors[[i]]$group, ] <- NA
+  #присваивание неопределенных значений всем группам number_peoples с пустыми значениями в категориях 
+  if (length(incorrect_vars_and_grps) > 0) {
+    for (i in 1:length(incorrect_vars_and_grps)) {
+      number_peoples[incorrect_vars_and_grps[[i]]$group, ] <- NA
     }
   }
-  #получение датафрейма, содержащего данные о количестве человек и доверительном интервале для каждого столбца
-  peoples_total <- table(data[, group_id])
+  #создание датафрейма с данными для построения графика
   data_for_graphic <- get_data_for_building_graphic("cmp.categories", categories, groups, number_peoples)
-  #получение значений p и координат стрелок
+  #создание датафрейма с p-значениями и координатами стрелок
   data_with_only_cat <- data[, c(group_id, column_cat)]
   arrow_positions <- get_p_values_and_arrow_coord("cmp.categories", data_with_only_cat, data_for_graphic, categories,
-                         groups, groups_with_errors, p_adjust_method)
-  #фильтрация датафрейма со значениями p в зависимости от режима их отображения
+                         groups, incorrect_vars_and_grps, p_adjust_method)
+  #фильтрация датафрейма со p-значениями в зависимости от режима их отображения
   if (p_display == "s") {
     arrow_positions <- dplyr::filter(arrow_positions, arrow_positions$p <= 0.05)
   } else if (p_display == "ns") {
     arrow_positions <- dplyr::filter(arrow_positions, arrow_positions$p > 0.05)
   }
-  #создание графика
+  #инициализация графика
   graphic <- ggplot2::ggplot(data_for_graphic,
                              ggplot2::aes(x = data_for_graphic$indicators,
                                           y = data_for_graphic$mean,
@@ -496,16 +496,17 @@ cmp.categories <- function(data, group_id, group_labels, column_cat, path_pics_o
   }
   graphic <- graphic + ggplot2::scale_y_continuous(name = NULL, breaks = seq(0, lim_y, 5),
                                                    limits = c(0, lim_y), labels = function (x) paste0(x, "%"))
-  #изменение размера легенды
+  #изменение размера элементов легенды
   graphic <- graphic + ggplot2::theme(legend.key.size = grid::unit(0.7, "cm"))
   #редактирование заголовка легенды
   graphic <- graphic + ggplot2::guides(fill = ggplot2::guide_legend(title = NULL))
   #редактирование названий групп в легенде
+  peoples_total <- table(data[, group_id])
   for (i in 1:length(groups)) {
     group_labels[i] <- paste0(group_labels[i], "\n(n = ", peoples_total[i], ")")
   }
   graphic <- graphic + ggplot2::scale_fill_discrete(labels = group_labels)
-  #вывод информации о количестве людей для каждого столбца
+  #вывод информации о количестве пациентов и проценте этих пациентов над столбцами
   percents <- as.character(data_for_graphic$mean)
   number_peoples_in_group <- as.character(data_for_graphic$x)
   labels_for_bars <- c()
@@ -523,23 +524,24 @@ cmp.categories <- function(data, group_id, group_labels, column_cat, path_pics_o
                                  position = ggplot2::position_dodge(0.9),
                                  size = 3,
                                  na.rm = TRUE)
-  #добавление к графику доверительных интервалов
+  #добавление к графику доверительных интервалов для процента пациентов
   graphic <- graphic + ggplot2::geom_errorbar(ggplot2::aes(ymin = data_for_graphic$lower,
                                                            ymax = data_for_graphic$upper),
                                               width = 0.5,
                                               position = ggplot2::position_dodge(0.9),
                                               na.rm = TRUE)
-  #добавление стрелок со значениями p
+  #добавление p-значений и стрелок на график
   if (!plyr::empty(arrow_positions)) {
     graphic <- graphic + ggsignif::geom_signif(y_position = arrow_positions$y,
                                                xmin = arrow_positions$x_min,
                                                xmax = arrow_positions$x_max,
                                                annotations = p_value_formatted(arrow_positions$p),
                                                vjust = 0,
-                                               textsize = 3
+                                               textsize = 3,
+                                               na.rm = TRUE
                                                )
   }
-  #сохранение графика в файл
+  #сохранение графика в файл и вывод графика на экран
   save_pic_png_600(graphic, path_pics_out, pic_name)
   return (graphic)
 }

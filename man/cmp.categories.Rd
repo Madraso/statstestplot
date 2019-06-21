@@ -8,11 +8,11 @@ cmp.categories(data, group_id, group_labels, column_cat, path_pics_out,
   pic_name, p_display = "all", p_adjust_method = "BH")
 }
 \arguments{
-\item{data}{Датафрейм с данными (Пример: libgr::categories)}
+\item{data}{Датафрейм с данными (Пример: statstestplot::categories)}
 
 \item{group_id}{Число, являющееся номером столбца с группами пациентов}
 
-\item{group_labels}{Строковый вектор, cодержащий имена групп, которые будут отображены в легенде графика}
+\item{group_labels}{Строковый вектор, cодержащий имена групп. Эти имена будут сопоставлены в легенде графика}
 
 \item{column_cat}{Число, являющееся номером столбца с категориями}
 
@@ -20,10 +20,11 @@ cmp.categories(data, group_id, group_labels, column_cat, path_pics_out,
 
 \item{pic_name}{Строка, содержащая имя сохраняемого файла}
 
-\item{p_display}{Решает, какие парные значения p отображать. Возможные значения:
-"s" (значимые [p <= 0.05]), "ns" (незначимые [p > 0.05]), "all" (все значения). (По умолчанию: "all").}
+\item{p_display}{Решает, какие парные p-значения отображать.
+Возможные значения: "s" (значимые [p <= 0.05]), "ns" (незначимые [p > 0.05]), "all" (все значения). (По умолчанию: "all").}
 
-\item{p_adjust_method}{Решает, каким методом будут отрегулированы значения p. Возможные значения: "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none". (По умолчанию: "BH").}
+\item{p_adjust_method}{Решает, каким методом будут отрегулированы p-значения.
+Возможные значения: "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none". (По умолчанию: "BH").}
 }
 \value{
 Объект класса ggplot2
@@ -34,8 +35,8 @@ cmp.categories(data, group_id, group_labels, column_cat, path_pics_out,
 \details{
 На графике каждая категория - это набор столбцов, их количество равно количеству групп пациентов.
 Над столбцами отображается информация о количестве в группе пациентов, принадлежащих данной категории, а также процент этих людей от всех пациентов в группе.
-Для столбцов в виде стрелки отображается диапазон, в котором с вероятностью 95\% находится "истинный" процент пациентов в группе с данной категорией, называемый доверительным интервалом.
-Для всевозможных пар групп отображается значение p, которое используется для их сравнения.
+Для столбцов в виде стрелки отображается диапазон, в котором с вероятностью 95\% находится "истинный" процент пациентов, называемый доверительным интервалом.
+Для всевозможных пар групп отображается p-значение, которое используется для их сравнения.
 }
 \examples{
 #Подключим библиотеку и загрузим датафрейм с категориями
@@ -52,9 +53,9 @@ column_cat <- 2
 picture_name <- "Категории_по_умолчанию"
 picture_path <- paste0(getwd(), "/")
 cmp.categories(categories, group_id, group_labels, column_cat,
-	picture_path, picture_name)
+    picture_path, picture_name)
 
-#Построим график, отобразив только незначимые p и отрегулируем их методом поправки Бонферрони
+#Построим график, отобразив только незначимые p и отрегулировав их методом поправки Бонферрони
 group_id <- 1
 group_labels <- c("A", "B", "C")
 column_cat <- 2
@@ -62,6 +63,6 @@ p_display <- "ns"
 p_adjust_method <- "bonferroni"
 picture_name <- "Категории_незначимые_p_метод_Бонферрони"
 picture_path <- paste0(getwd(), "/")
-cmp.categories(categories, group_id, group_labels, column_cat,
-	picture_path, picture_name, p_display, p_adjust_method)
+cmp.categories(categories, group_id, group_labels,
+    column_cat, picture_path, picture_name, p_display, p_adjust_method)
 }

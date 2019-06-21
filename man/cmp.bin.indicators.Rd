@@ -2,17 +2,17 @@
 % Please edit documentation in R/statstestplot.R
 \name{cmp.bin.indicators}
 \alias{cmp.bin.indicators}
-\title{Построение графика сравнения предоперационных бинарных показателей в исследуемых группах пациентов}
+\title{Построение графика сравнения бинарных показателей в исследуемых группах пациентов}
 \usage{
 cmp.bin.indicators(data, group_id, group_labels, column_list,
-  path_pics_out, pic_name, p_display = "all")
+  path_pics_out, pic_name, p_display = "all", p_adjust_method = "BH")
 }
 \arguments{
-\item{data}{Датафрейм с данными (Пример: libgr::binary_indicators)}
+\item{data}{Датафрейм с данными (Пример: statstestplot::binary_indicators)}
 
 \item{group_id}{Число, являющееся номером столбца с группами пациентов}
 
-\item{group_labels}{Строковый вектор, cодержащий имена групп, которые будут отображены в легенде графика}
+\item{group_labels}{Строковый вектор, cодержащий имена групп. Эти имена будут сопоставлены в легенде графика}
 
 \item{column_list}{Числовой вектор, содержащий номера столбцов с бинарными показателями}
 
@@ -20,8 +20,11 @@ cmp.bin.indicators(data, group_id, group_labels, column_list,
 
 \item{pic_name}{Строка, содержащая имя сохраняемого файла}
 
-\item{p_display}{Решает, какие парные значения p отображать. Возможные значения:
-"s" (значимые [p <= 0.05]), "ns" (незначимые [p > 0.05]), "all" (все значения). (По умолчанию: "all").}
+\item{p_display}{Решает, какие парные p-значения отображать.
+Возможные значения: "s" (значимые [p <= 0.05]), "ns" (незначимые [p > 0.05]), "all" (все значения). (По умолчанию: "all").}
+
+\item{p_adjust_method}{Решает, каким методом будут отрегулированы p-значения.
+Возможные значения: "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none". (По умолчанию: "BH").}
 }
 \value{
 Объект класса ggplot2
@@ -33,8 +36,8 @@ cmp.bin.indicators(data, group_id, group_labels, column_list,
 \details{
 На графике каждый показатель - это набор столбцов, их количество равно количеству групп пациентов.
 Над столбцами отображается информация о количестве в группе пациентов, имеющих данный показатель, а также процент этих людей от всех пациентов, имеющих данный показатель.
-Для столбцов в виде стрелки отображается диапазон, в котором с вероятностью 95\% находится "истинный" процент пациентов с данным показателем, называемый доверительным интервалом.
-Для всевозможных пар групп отображается значение p, которое используется для их сравнения.
+Для столбцов в виде стрелки отображается диапазон, в котором с вероятностью 95\% находится "истинный" процент пациентов, называемый доверительным интервалом.
+Для всевозможных пар групп отображается p-значение, которое используется для их сравнения.
 }
 \examples{
 #Подключим библиотеку и загрузим датафрейм с бинарными показателями
@@ -44,22 +47,23 @@ data(binary_indicators)
 #Распечатаем его
 print(binary_indicators)
 
-#Построим график с отображением всех парных значений p
+#Построим график с параметрами по умолчанию
 group_id <- 1
 group_labels <- c("A", "B", "C")
 columns <- c(2, 3, 4, 5, 6)
 picture_name <- "БП_все_значения_p"
 picture_path <- paste0(getwd(), "/")
-graphic <- cmp.bin.indicators(binary_indicators, group_id, group_labels,
-	columns, picture_path, picture_name)
+graphic <- cmp.bin.indicators(binary_indicators, group_id,
+    group_labels, columns, picture_path, picture_name)
 
-#Построим график с отображением только незначимых p
+#Построим график с отображением только незначимых p и их регулировкой методом Бенджамини-Хохберга
 group_id <- 1
 group_labels <- c("A", "B", "C")
 columns <- c(2, 3, 4, 5, 6)
 p_display <- "ns"
+p_adjust_method = "BH"
 picture_name <- "БП_незначимые_p"
 picture_path <- paste0(getwd(), "/")
-graphic <- cmp.bin.indicators(binary_indicators, group_id, group_labels,
-	columns, picture_path, picture_name, p_display)
+graphic <- cmp.bin.indicators(binary_indicators, group_id,
+    group_labels, columns, picture_path, picture_name, p_display, p_adjust_method)
 }
