@@ -153,14 +153,14 @@ get_x_arrow_coordinates <- function(function_name, groups, number_groups, number
   groups_indicator_width <- 0.9
   width_btw_indicators <- 0.55
   bar_width <- groups_indicator_width / number_groups
-  coord_center_bar <- bar_width / 2
-  start_x <- seq(from = coord_center_bar + width_btw_indicators, by = bar_width, length.out = number_groups)
+  start_x <- seq(from = width_btw_indicators, by = bar_width, length.out = number_groups)
   x_positions <- data.frame(x_min = numeric(), x_max = numeric())
   coord_combn <- as.data.frame(cbind(t(utils::combn(groups, 2)), t(utils::combn(start_x, 2))))
   coord_combn$V1 <- as.character(coord_combn$V1)
   coord_combn$V2 <- as.character(coord_combn$V2)
   coord_combn$V3 <- as.double(as.character(coord_combn$V3))
   coord_combn$V4 <- as.double(as.character(coord_combn$V4))
+  coord_combn$V4 <- coord_combn$V4 + bar_width
   for (i in 1:number_indicators) {
     groups_with_errors <- get_groups_with_errors(function_name, incorrect_vars_and_grps, i)
     for (j in 1:nrow(coord_combn)) {
